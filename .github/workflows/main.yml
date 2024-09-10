@@ -1,0 +1,41 @@
+name: Build and Upload HTML Application to S3
+
+# Run the workflow on every push to the main branch or on pull requests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Install zip utility
+      - name: Install zip
+        run: sudo apt-get install zip -y
+
+      # Step 3: Archive the HTML application (index.html) into a zip file
+      - name: Package HTML application into zip
+        run: |
+          mkdir -p output
+          zip -r output/html-application-$(date +'%Y-%m-%d_%H-%M-%S').zip index.html
+
+      # Step 4: Upload the zip archive to AWS S3
+      - name: Upload artifact to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'us-east-1'  # Replace with your AWS region
+          source-dir: 'output/'
+          destination-bucket: 'your-s3-bucket-name' # Replace with your S3 bucket name
+          destination-dir: 'html-apps/'  # Optional folder in the bucket
+          delete-removed: false  # Set to false to retain previous versions
